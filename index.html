@@ -1288,12 +1288,9 @@
             // Prepare data for Google Sheets
             const data = {
                 timestamp,
-                firstName,
-                lastName,
-                fullName: `${firstName} ${lastName}`,
+                name: `${firstName} ${lastName}`,
                 email,
                 phone,
-                birthday
             };
             
             try {
