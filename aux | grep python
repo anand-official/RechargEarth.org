@@ -1,0 +1,5 @@
+[33m87d8120[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m)[m CRITICAL FIX: Admin panel pledges display - fixed element IDs, display states, added dual data fetch and failsafe timeout
+[33m4e6b8a1[m[33m ([m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m v3: Admin panel enhancements + Excel export - Birthday field, CSV export, improved error handling
+[33mb76dc08[m v2: Backend fixes - simplified Firebase collections, DoB format, enhanced admin panel
+[33m8d81747[m Add Firebase authentication and update site with real-time database integration
+[33m874d8ec[m Initial commit

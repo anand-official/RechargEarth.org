@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <!-- Security: Basic CSP to prevent unauthorized script injection -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self' https: data: 'unsafe-inline' 'unsafe-eval';">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.tailwindcss.com https://www.gstatic.com/firebasejs; style-src 'self' https://cdn.tailwindcss.com https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://firebaseio.com https://firebaseinstallations.googleapis.com https://identitytoolkit.googleapis.com; frame-src 'self' https://accounts.google.com; base-uri 'self'; form-action 'self';">
     <meta name="description" content="RechargEarth: Celebrate life milestones by planting trees. Join the movement to restore the planet.">
     <meta name="theme-color" content="#064e3b">
     <title>RechargEarth | Plant for the Future</title>
@@ -13,8 +13,8 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="preconnect" href="https://cdn.tailwindcss.com">
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400;1,600&family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-9N8jI0Z7lqkqk6H3c3dVJ2vXoYbqJf3VfJzN3VvVQqvOQJvA7HhR7s1gRk3qFvYzV0P3xD8Yg3bYl2ZBq5yGmw==" crossorigin="anonymous" referrerpolicy="no-referrer">
+    <script src="https://cdn.tailwindcss.com" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <script>
         tailwind.config = {
             darkMode: 'class',
@@ -34,7 +34,7 @@
         html.dark body { color: #e5e7eb; background-color: #030712; }
         
         /* Hero fallback background */
-        .hero-section { background-color: #064e3b; position: relative; height: 100vh; min-height: 600px; background-image: url('https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?ixlib=rb-4.0.3&auto=format&fit=crop&w=2074&q=80'); background-size: cover; background-position: center; background-attachment: fixed; }
+        .hero-section { background-color: #064e3b; position: relative; height: 100vh; min-height: 600px; background-image: url('https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?ixlib=rb-4.0.3&auto=format&fit=crop&w=2074&q=80'); background-size: cover; background-position: center; }
         .hero-overlay { position: absolute; inset: 0; background: linear-gradient(to bottom, rgba(0,0,0,0.3) 0%, rgba(6, 78, 59, 0.5) 60%, rgba(6, 78, 59, 0.95) 100%); }
 
         /* Header Styling */
@@ -639,42 +639,9 @@
             const tax = Math.round(subtotal * 0.18);
             const total = subtotal + tax;
             
-            if (paymentMethod === 'razorpay') {
-                // Razorpay Integration
-                const options = {
-                    key: 'rzp_test_YOUR_KEY_HERE', // Replace with your Razorpay key
-                    amount: total * 100, // Razorpay expects amount in paise
-                    currency: 'INR',
-                    name: 'RechargEarth',
-                    description: 'Tree Planting Services',
-                    image: 'data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌱</text></svg>',
-                    handler: function(response) {
-                        handlePaymentSuccess(response, formData);
-                    },
-                    prefill: {
-                        name: `${formData.get('firstName')} ${formData.get('lastName')}`,
-                        email: formData.get('email'),
-                        contact: formData.get('phone')
-                    },
-                    theme: {
-                        color: '#064e3b'
-                    }
-                };
-                
-                if (typeof Razorpay !== 'undefined') {
-                    const rzp = new Razorpay(options);
-                    rzp.open();
-                } else {
-                    // Simulate payment for demo
-                    window.showToast("Demo Mode: Simulating payment...", "success");
-                    setTimeout(() => {
-                        handlePaymentSuccess({ razorpay_payment_id: 'demo_' + Date.now() }, formData);
-                    }, 2000);
-                }
-            } else {
-                // Cash on Delivery
-                handlePaymentSuccess({ payment_method: 'COD' }, formData);
-            }
+            // For security, client-side payment initiation is disabled.
+            // Use server-initiated payment flow (e.g., create order on server, then redirect).
+            handlePaymentSuccess({ payment_method: paymentMethod || 'COD' }, formData);
         };
         
         window.handlePaymentSuccess = async (paymentResponse, formData) => {
@@ -717,47 +684,23 @@
             };
             
             try {
-                // Save order to Firebase
+                // Save order to Firebase (server-side verification required)
                 if (db) {
-                    const { collection, addDoc, serverTimestamp } = await import('https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js');
-                    
-                    // Save to orders collection
                     await addDoc(collection(db, 'orders'), {
                         ...orderData,
                         firestoreTimestamp: serverTimestamp()
                     });
-                    
-                    // Send email notification via Firebase trigger email extension
-                    await addDoc(collection(db, 'mail'), {
-                        to: ['rechargearthorganization@gmail.com'],
-                        message: {
-                            subject: `🌱 New Order #${orderData.orderId}`,
-                            html: generateOrderEmailHTML(orderData),
-                            text: generateOrderEmailText(orderData)
-                        }
-                    });
-                    
-                    // Send customer confirmation
-                    await addDoc(collection(db, 'mail'), {
-                        to: [orderData.customer.email],
-                        message: {
-                            subject: `Order Confirmation #${orderData.orderId} - RechargEarth`,
-                            html: generateCustomerEmailHTML(orderData),
-                            text: `Thank you for your order! Your order ID is ${orderData.orderId}.`
-                        }
-                    });
-                    
-                    window.showToast("✅ Order saved and email notifications sent!", "success");
+                    window.showToast("✅ Order saved!", "success");
                 }
             } catch (error) {
                 console.error('Error saving order:', error);
-                window.showToast("⚠️ Order saved locally, email pending", "success");
+                window.showToast("⚠️ Order saved in session, will retry", "success");
             }
             
-            // Save to localStorage as backup
-            const orders = JSON.parse(localStorage.getItem('orders') || '[]');
+            // Save to sessionStorage as backup (PII safer, clears on session end)
+            const orders = JSON.parse(sessionStorage.getItem('orders') || '[]');
             orders.push(orderData);
-            localStorage.setItem('orders', JSON.stringify(orders));
+            sessionStorage.setItem('orders', JSON.stringify(orders));
             
             // Clear cart
             cart = [];
@@ -981,9 +924,8 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-analytics.js";
         import { getFirestore, collection, addDoc, getDocs, query, orderBy, serverTimestamp, onSnapshot, doc, deleteDoc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signInWithRedirect, signInAnonymously, signInWithCustomToken, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signInWithRedirect, signInWithCustomToken, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 
         // --- FIREBASE CONFIGURATION ---
         const firebaseConfig = {
@@ -998,7 +940,7 @@
         
         const appId = '1:42202126738:web:e22337541ff5a7567e094b';
         
-        let db, auth, analytics;
+        let db, auth;
         const googleProvider = new GoogleAuthProvider();
         const ADMIN_EMAIL = "admin@rechargearth.com"; 
 
@@ -1015,7 +957,6 @@
         // Initialize Firebase
         try {
             const app = initializeApp(firebaseConfig);
-            analytics = getAnalytics(app);
             db = getFirestore(app);
             auth = getAuth(app);
             try {
@@ -1105,17 +1046,59 @@
             window.currentProducts = products;
             console.log('Render products called with', products.length);
             
-            grid.innerHTML = products.map(p => `
-                <div class="product-card bg-white dark:bg-gray-800 rounded-3xl overflow-hidden shadow-sm border border-gray-100 dark:border-gray-700 relative flex flex-col h-full group reveal">
-                    ${p.featured ? '<span class="absolute top-4 right-4 bg-accent text-white text-[10px] font-bold px-3 py-1 rounded-full z-10 shadow-sm uppercase tracking-wider">Best Value</span>' : ''}
-                    <div class="h-56 overflow-hidden relative bg-gray-100 dark:bg-gray-700"><img src="${p.image}" alt="${p.name}" width="800" height="600" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" loading="eager" onerror="this.src='https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80'"></div>
-                    <div class="p-8 flex flex-col flex-1">
-                        <h3 class="text-xl font-bold text-primary dark:text-white mb-2 font-serif">${p.name}</h3>
-                        <p class="text-gray-500 dark:text-gray-400 text-sm mb-6 flex-1 leading-relaxed">${p.desc}</p>
-                        <div class="flex items-center justify-between pt-4 border-t border-gray-50 dark:border-gray-700"><span class="text-2xl font-bold text-dark dark:text-white">₹${p.price}</span><button onclick="window.addToCart('${p.id || p.name}')" class="bg-secondary hover:bg-primary dark:hover:bg-emerald-400 dark:hover:text-gray-900 text-white px-4 py-2 rounded-full transition-all add-btn shadow-lg" aria-label="Add to cart"><i class="fas fa-plus"></i></button></div>
-                    </div>
-                </div>
-            `).join('');
+            // Build product cards safely without innerHTML
+            grid.innerHTML = '';
+            products.forEach(p => {
+                const card = document.createElement('div');
+                card.className = 'product-card bg-white dark:bg-gray-800 rounded-3xl overflow-hidden shadow-sm border border-gray-100 dark:border-gray-700 relative flex flex-col h-full group reveal';
+
+                if (p.featured) {
+                    const badge = document.createElement('span');
+                    badge.className = 'absolute top-4 right-4 bg-accent text-white text-[10px] font-bold px-3 py-1 rounded-full z-10 shadow-sm uppercase tracking-wider';
+                    badge.textContent = 'Best Value';
+                    card.appendChild(badge);
+                }
+
+                const imgWrap = document.createElement('div');
+                imgWrap.className = 'h-56 overflow-hidden relative bg-gray-100 dark:bg-gray-700';
+                const img = document.createElement('img');
+                img.src = p.image;
+                img.alt = p.name || 'Product image';
+                img.width = 800; img.height = 600;
+                img.loading = 'lazy';
+                img.className = 'w-full h-full object-cover transition-transform duration-700 group-hover:scale-110';
+                img.onerror = function(){ this.src='https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80'; };
+                imgWrap.appendChild(img);
+                card.appendChild(imgWrap);
+
+                const body = document.createElement('div');
+                body.className = 'p-8 flex flex-col flex-1';
+                const title = document.createElement('h3');
+                title.className = 'text-xl font-bold text-primary dark:text-white mb-2 font-serif';
+                title.textContent = p.name || '';
+                const desc = document.createElement('p');
+                desc.className = 'text-gray-500 dark:text-gray-400 text-sm mb-6 flex-1 leading-relaxed';
+                desc.textContent = p.desc || '';
+                const footer = document.createElement('div');
+                footer.className = 'flex items-center justify-between pt-4 border-t border-gray-50 dark:border-gray-700';
+                const price = document.createElement('span');
+                price.className = 'text-2xl font-bold text-dark dark:text-white';
+                price.textContent = `₹${p.price}`;
+                const btn = document.createElement('button');
+                btn.className = 'bg-secondary hover:bg-primary dark:hover:bg-emerald-400 dark:hover:text-gray-900 text-white px-4 py-2 rounded-full transition-all add-btn shadow-lg';
+                btn.setAttribute('aria-label','Add to cart');
+                btn.onclick = () => window.addToCart(p.id || p.name);
+                const icon = document.createElement('i');
+                icon.className = 'fas fa-plus';
+                btn.appendChild(icon);
+                footer.appendChild(price);
+                footer.appendChild(btn);
+                body.appendChild(title);
+                body.appendChild(desc);
+                body.appendChild(footer);
+                card.appendChild(body);
+                grid.appendChild(card);
+            });
             document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
         }
 
@@ -1200,7 +1183,7 @@
 
         window.deleteProduct = async (id) => {
             if (!confirm("Are you sure you want to delete this product?")) return;
-            if (!auth) return;
+            if (!auth || auth.currentUser?.email !== ADMIN_EMAIL) { window.showToast("Unauthorized", "error"); return; }
             const btn = event?.target?.closest('button');
             if (btn) btn.disabled = true;
             try {
@@ -1447,33 +1430,68 @@
             pledges.forEach((data, index) => {
                 try {
                     const row = document.createElement('tr');
-                    row.className = "hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors";
+                    row.className = 'hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors';
                     const dateStr = data.timestamp ? new Date(data.timestamp.seconds * 1000).toLocaleDateString() : 'N/A';
-                    
-                    row.innerHTML = `
-                        <td class="p-5 text-gray-500 dark:text-gray-400 font-mono text-xs">${dateStr}</td>
-                        <td class="p-5">
-                            <div class="font-bold text-primary dark:text-white">${data.fullName || 'Unknown'}</div>
-                        </td>
-                        <td class="p-5 text-gray-600 dark:text-gray-300">
-                            <div class="text-sm"><i class="fas fa-birthday-cake mr-1"></i>${data.birthday || 'N/A'}</div>
-                        </td>
-                        <td class="p-5 text-gray-600 dark:text-gray-300">
-                            <div class="text-sm">${data.email || 'N/A'}</div>
-                            <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                                <i class="fas fa-phone mr-1"></i>${data.phone || 'N/A'}
-                            </div>
-                        </td>
-                        <td class="p-5 text-right flex gap-3 justify-end">
-                            <button onclick="window.editPledge('${data.id}')" class="text-blue-400 hover:text-blue-600 transition-colors" title="Edit">
-                                <i class="fas fa-edit"></i>
-                            </button>
-                            <button onclick="window.deletePledge('${data.id}')" class="text-red-400 hover:text-red-600 transition-colors" title="Delete">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                        </td>
-                    `;
-                    
+
+                    const tdDate = document.createElement('td');
+                    tdDate.className = 'p-5 text-gray-500 dark:text-gray-400 font-mono text-xs';
+                    tdDate.textContent = dateStr;
+
+                    const tdName = document.createElement('td');
+                    tdName.className = 'p-5';
+                    const nameDiv = document.createElement('div');
+                    nameDiv.className = 'font-bold text-primary dark:text-white';
+                    nameDiv.textContent = data.fullName || 'Unknown';
+                    tdName.appendChild(nameDiv);
+
+                    const tdBirthday = document.createElement('td');
+                    tdBirthday.className = 'p-5 text-gray-600 dark:text-gray-300';
+                    const bDiv = document.createElement('div');
+                    bDiv.className = 'text-sm';
+                    const bIcon = document.createElement('i');
+                    bIcon.className = 'fas fa-birthday-cake mr-1';
+                    bDiv.appendChild(bIcon);
+                    bDiv.appendChild(document.createTextNode(data.birthday || 'N/A'));
+                    tdBirthday.appendChild(bDiv);
+
+                    const tdContact = document.createElement('td');
+                    tdContact.className = 'p-5 text-gray-600 dark:text-gray-300';
+                    const emailDiv = document.createElement('div');
+                    emailDiv.className = 'text-sm';
+                    emailDiv.textContent = data.email || 'N/A';
+                    const phoneDiv = document.createElement('div');
+                    phoneDiv.className = 'text-xs text-gray-500 dark:text-gray-400 mt-1';
+                    const pIcon = document.createElement('i');
+                    pIcon.className = 'fas fa-phone mr-1';
+                    phoneDiv.appendChild(pIcon);
+                    phoneDiv.appendChild(document.createTextNode(data.phone || 'N/A'));
+                    tdContact.appendChild(emailDiv);
+                    tdContact.appendChild(phoneDiv);
+
+                    const tdActions = document.createElement('td');
+                    tdActions.className = 'p-5 text-right flex gap-3 justify-end';
+                    const editBtn = document.createElement('button');
+                    editBtn.className = 'text-blue-400 hover:text-blue-600 transition-colors';
+                    editBtn.title = 'Edit';
+                    editBtn.onclick = () => window.editPledge(data.id);
+                    const editIcon = document.createElement('i');
+                    editIcon.className = 'fas fa-edit';
+                    editBtn.appendChild(editIcon);
+                    const delBtn = document.createElement('button');
+                    delBtn.className = 'text-red-400 hover:text-red-600 transition-colors';
+                    delBtn.title = 'Delete';
+                    delBtn.onclick = () => window.deletePledge(data.id);
+                    const delIcon = document.createElement('i');
+                    delIcon.className = 'fas fa-trash';
+                    delBtn.appendChild(delIcon);
+                    tdActions.appendChild(editBtn);
+                    tdActions.appendChild(delBtn);
+
+                    row.appendChild(tdDate);
+                    row.appendChild(tdName);
+                    row.appendChild(tdBirthday);
+                    row.appendChild(tdContact);
+                    row.appendChild(tdActions);
                     tbody.appendChild(row);
                     console.log(`✅ Added pledge row ${index + 1}: ${data.fullName}`);
                 } catch (error) {
@@ -1531,6 +1549,7 @@
 
         window.deletePledge = async (id) => { 
             if (!confirm("Are you sure you want to delete this pledge?")) return;
+            if (!auth || auth.currentUser?.email !== ADMIN_EMAIL) { window.showToast("Unauthorized", "error"); return; }
             try { 
                 await deleteDoc(doc(db, 'pledges', id)); 
                 window.showToast("Pledge deleted successfully", "success"); 
@@ -1779,6 +1798,14 @@
             const birthday = sanitizeHTML(e.target.birthday.value);
 
             console.log('Attempting to save pledge...', { firstName, lastName, email, phone, birthday });
+
+            // Input validation
+            const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            const phoneRe = /^\+?\d[\d\s-]{6,}$/;
+            const birthdayRe = /^(0[1-9]|[12][0-9]|3[01])-(0[1-9]|1[0-2])$/;
+            if (!emailRe.test(email)) { window.showToast('Invalid email address', 'error'); btn.innerHTML = old; btn.disabled = false; return; }
+            if (!phoneRe.test(phone)) { window.showToast('Invalid phone number', 'error'); btn.innerHTML = old; btn.disabled = false; return; }
+            if (!birthdayRe.test(birthday)) { window.showToast('Invalid birthday format (DD-MM)', 'error'); btn.innerHTML = old; btn.disabled = false; return; }
             
             if (!db) {
                 // Save to localStorage as fallback
